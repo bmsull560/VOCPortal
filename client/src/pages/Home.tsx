@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
+import { APP_LOGO, APP_TITLE } from "@/const";
 import { ArrowRight, BookOpen, TrendingUp, Users, Award, Brain, Target } from "lucide-react";
 import { Link } from "wouter";
 
@@ -28,9 +28,9 @@ export default function Home() {
                 </Link>
               </>
             ) : (
-              <a href={getLoginUrl()}>
-                <Button>Get Started</Button>
-              </a>
+              <Link href="/dashboard">
+                <Button>Demo Login</Button>
+              </Link>
             )}
           </nav>
         </div>
@@ -53,11 +53,11 @@ export default function Home() {
                 </Button>
               </Link>
             ) : (
-              <a href={getLoginUrl()}>
+              <Link href="/dashboard">
                 <Button size="lg" variant="secondary" className="gap-2">
-                  Start Your Journey <ArrowRight className="h-5 w-5" />
+                  Demo Login <ArrowRight className="h-5 w-5" />
                 </Button>
-              </a>
+              </Link>
             )}
           </div>
         </div>
@@ -205,11 +205,11 @@ export default function Home() {
                 </a>
               </Link>
             ) : (
-              <a href={getLoginUrl()}>
+              <Link href="/dashboard">
                 <Button size="lg" variant="secondary" className="gap-2">
-                  Start Learning Today <ArrowRight className="h-5 w-5" />
+                  Demo Login <ArrowRight className="h-5 w-5" />
                 </Button>
-              </a>
+              </Link>
             )}
           </div>
         </div>

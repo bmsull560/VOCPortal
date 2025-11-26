@@ -207,3 +207,194 @@ export const resources = mysqlTable("resources", {
 
 export type Resource = typeof resources.$inferSelect;
 export type InsertResource = typeof resources.$inferInsert;
+
+/**
+ * Academy Progress - Detailed tracking for VOS Academy learning
+ */
+export const academyProgress = mysqlTable("academyProgress", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  
+  // Role and level tracking
+  role: mysqlEnum("role", ["Sales", "CS", "Marketing", "Product", "Executive", "VE"]).notNull(),
+  currentLevel: int("currentLevel").default(0).notNull(), // 0-5
+  
+  // Module progress
+  modulesCompleted: json("modulesCompleted").$type<{
+    [moduleId: string]: {
+      status: 'not_started' | 'in_progress' | 'completed';
+      score?: number;
+      completedAt?: string;
+      timeSpent?: number;
+    };
+  }>(),
+  
+  // Quiz performance
+  quizzes: json("quizzes").$type<{
+    [quizId: string]: {
+      attempts: number;
+      bestScore: number;
+      lastAttempt: string;
+      passed: boolean;
+    };
+  }>(),
+  
+  // Badge collection
+  badges: json("badges").$type<{
+    [badgeId: string]: {
+      earnedAt: string;
+      level: number;
+      category: string;
+    };
+  }>(),
+  
+  // Overall maturity score (calculated)
+  maturityScore: int("maturityScore").default(0).notNull(), // 0-100
+  
+  // Learning analytics
+  totalTimeSpent: int("totalTimeSpent").default(0).notNull(), // minutes
+  streakDays: int("streakDays").default(0).notNull(),
+  lastActivityDate: timestamp("lastActivityDate").defaultNow().notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AcademyProgress = typeof academyProgress.$inferSelect;
+export type InsertAcademyProgress = typeof academyProgress.$inferInsert;
+
+/**
+ * Academy Modules - Individual learning modules within role tracks
+ */
+export const academyModules = mysqlTable("academyModules", {
+  id: int("id").autoincrement().primaryKey(),
+  moduleId: varchar("moduleId", { length: 64 }).notNull().unique(),
+  
+  // Module metadata
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  role: mysqlEnum("role", ["Sales", "CS", "Marketing", "Product", "Executive", "VE", "All"]).notNull(),
+  level: int("level").notNull(), // 0-5
+  
+  // Content structure (JSON-driven)
+  content: json("content").$type<{
+    type: 'page';
+    sections: Array<{
+      component: string;
+      props: Record<string, any>;
+    }>;
+  }>(),
+  
+  // Learning outcomes
+  learningObjectives: json("learningObjectives").$type<string[]>(),
+  requiredCompetencies: json("requiredCompetencies").$type<string[]>(),
+  
+  // Assessment
+  quizId: varchar("quizId", { length: 64 }),
+  simulationId: varchar("simulationId", { length: 64 }),
+  passingScore: int("passingScore").default(80).notNull(),
+  
+  // Prerequisites
+  prerequisites: json("prerequisites").$type<string[]>(),
+  estimatedDuration: int("estimatedDuration").notNull(), // minutes
+  
+  // Status
+  isPublished: boolean("isPublished").default(false).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AcademyModule = typeof academyModules.$inferSelect;
+export type InsertAcademyModule = typeof academyModules.$inferInsert;
+
+/**
+ * AI Prompts Library - Curated prompts for VOS workflows
+ */
+export const aiPrompts = mysqlTable("aiPrompts", {
+  id: int("id").autoincrement().primaryKey(),
+  promptId: varchar("promptId", { length: 64 }).notNull().unique(),
+  
+  // Categorization
+  category: mysqlEnum("category", [
+    "discovery", "roi_modeling", "realization", "expansion", "governance"
+  ]).notNull(),
+  subcategory: varchar("subcategory", { length: 100 }),
+  
+  // Prompt content
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  promptText: text("promptText").notNull(),
+  
+  // Usage guidelines
+  usageGuidelines: json("usageGuidelines").$type<{
+    inputs: string[];
+    outputs: string;
+    maturityLevel: number;
+    examples: Array<{
+      input: string;
+      output: string;
+    }>;
+  }>(),
+  
+  // Role and level targeting
+  targetRoles: json("targetRoles").$type<string[]>(),
+  targetMaturityLevel: int("targetMaturityLevel").notNull(), // 0-5
+  
+  // Metadata
+  tags: json("tags").$type<string[]>(),
+  version: varchar("version", { length: 20 }).default("1.0").notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AIPrompt = typeof aiPrompts.$inferSelect;
+export type InsertAIPrompt = typeof aiPrompts.$inferInsert;
+
+/**
+ * Simulation Workflows - Interactive learning simulations
+ */
+export const simulations = mysqlTable("simulations", {
+  id: int("id").autoincrement().primaryKey(),
+  simulationId: varchar("simulationId", { length: 64 }).notNull().unique(),
+  
+  // Simulation metadata
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  type: mysqlEnum("type", [
+    "handoff", "decision_tree", "drag_drop", "role_play", "case_study"
+  ]).notNull(),
+  
+  // Targeting
+  targetRoles: json("targetRoles").$type<string[]>(),
+  targetLevel: int("targetLevel").notNull(), // 0-5
+  pillar: int("pillar").notNull(), // 1-10
+  
+  // Simulation flow
+  flow: json("flow").$type<{
+    steps: Array<{
+      id: string;
+      type: string;
+      content: any;
+      interactions: any;
+      scoring: any;
+    }>;
+  }>(),
+  
+  // Scoring logic
+  maxScore: int("maxScore").default(100).notNull(),
+  passingScore: int("passingScore").default(80).notNull(),
+  timeLimit: int("timeLimit"), // minutes, null for no limit
+  
+  // Status
+  isPublished: boolean("isPublished").default(false).notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Simulation = typeof simulations.$inferSelect;
+export type InsertSimulation = typeof simulations.$inferInsert;

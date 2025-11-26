@@ -10,6 +10,15 @@ import PillarOverview from "./pages/PillarOverview";
 import Quiz from "./pages/Quiz";
 import Profile from "./pages/Profile";
 import Resources from "./pages/Resources";
+// Academy imports
+import AcademyDashboard from "./pages/academy/Dashboard";
+import AcademyMaturityAssessment from "./pages/academy/MaturityAssessment";
+import RoleTrack from "./pages/academy/RoleTrack";
+import RoleLevel from "./pages/academy/RoleLevel";
+import AcademyQuiz from "./pages/academy/Quiz";
+import AcademySimulation from "./pages/academy/Simulation";
+import PromptLibrary from "./pages/academy/PromptLibrary";
+import LessonView from "./pages/academy/LessonView";
 
 function Router() {
   return (
@@ -20,6 +29,16 @@ function Router() {
       <Route path={"/quiz/:pillarNumber"} component={Quiz} />
       <Route path={"/profile"} component={Profile} />
       <Route path={"/resources"} component={Resources} />
+      {/* Academy Routes */}
+      <Route path={"/academy"} component={AcademyDashboard} />
+      <Route path={"/academy/dashboard"} component={AcademyDashboard} />
+      <Route path={"/academy/lesson/:id"} component={LessonView} />
+      <Route path={"/academy/maturity-assessment"} component={AcademyMaturityAssessment} />
+      <Route path={"/academy/role/:role"} component={RoleTrack} />
+      <Route path={"/academy/role/:role/:level"} component={RoleLevel} />
+      <Route path={"/academy/quiz/:pillar"} component={AcademyQuiz} />
+      <Route path={"/academy/simulation/:workflow"} component={AcademySimulation} />
+      <Route path={"/academy/library/prompts"} component={PromptLibrary} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

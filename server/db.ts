@@ -17,6 +17,18 @@ import {
   InsertCertification,
   InsertMaturityAssessment,
   InsertResource,
+  AcademyProgress,
+  academyProgress,
+  AcademyModule,
+  academyModules,
+  AIPrompt,
+  aiPrompts,
+  Simulation,
+  simulations,
+  InsertAcademyProgress,
+  InsertAcademyModule,
+  InsertAIPrompt,
+  InsertSimulation,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -361,24 +373,8 @@ export async function createMaturityAssessment(assessment: InsertMaturityAssessm
 // Resources
 // ============================================================================
 
-export async function getAllResources() {
+export async function getAllResources(vosRole: string) {
   const db = await getDb();
-  if (!db) return [];
-
-  return await db.select().from(resources);
-}
-
-export async function getResourcesByPillar(pillarId: number) {
-  const db = await getDb();
-  if (!db) return [];
-
-  return await db.select().from(resources).where(eq(resources.pillarId, pillarId));
-}
-
-export async function getResourcesByRole(vosRole: string) {
-  const db = await getDb();
-  if (!db) return [];
-
   return await db.select().from(resources).where(eq(resources.vosRole, vosRole));
 }
 
@@ -387,4 +383,241 @@ export async function createResource(resource: InsertResource) {
   if (!db) return;
 
   await db.insert(resources).values(resource);
+}
+
+export async function deleteResource(id: number) {
+  const db = await getDb();
+  const result = await db.delete(resources).where(eq(resources.id, id));
+  return result;
+}
+
+// ============================================================================
+// Academy Progress
+// ============================================================================
+
+export async function getAcademyProgress(userId: number) {
+  const db = await getDb();
+  const result = await db.select().from(academyProgress).where(eq(academyProgress.userId, userId));
+  return result[0] || null;
+}
+
+export async function createAcademyProgress(data: InsertAcademyProgress) {
+  const db = await getDb();
+  const result = await db.insert(academyProgress).values(data);
+  return result;
+}
+
+export async function updateAcademyProgress(userId: number, data: Partial<InsertAcademyProgress>) {
+  const db = await getDb();
+  const result = await db
+    .update(academyProgress)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(academyProgress.userId, userId));
+  return result;
+}
+
+export async function updateModuleProgress(userId: number, moduleId: string, progressData: {
+  status: 'not_started' | 'in_progress' | 'completed';
+  score?: number;
+  completedAt?: string;
+  timeSpent?: number;
+}) {
+  const db = await getDb();
+  const currentProgress = await getAcademyProgress(userId);
+  
+  if (!currentProgress) {
+    throw new Error('Academy progress not found for user');
+  }
+
+  const updatedModules = {
+    ...currentProgress.modulesCompleted,
+    [moduleId]: progressData
+  };
+
+  return await updateAcademyProgress(userId, {
+    modulesCompleted: updatedModules,
+    lastActivityDate: new Date()
+  });
+}
+
+export async function updateQuizProgress(userId: number, quizId: string, quizData: {
+  attempts: number;
+  bestScore: number;
+  lastAttempt: string;
+  passed: boolean;
+}) {
+  const db = await getDb();
+  const currentProgress = await getAcademyProgress(userId);
+  
+  if (!currentProgress) {
+    throw new Error('Academy progress not found for user');
+  }
+
+  const updatedQuizzes = {
+    ...currentProgress.quizzes,
+    [quizId]: quizData
+  };
+
+  return await updateAcademyProgress(userId, {
+    quizzes: updatedQuizzes,
+    lastActivityDate: new Date()
+  });
+}
+
+// ============================================================================
+// Academy Modules
+// ============================================================================
+
+export async function getAcademyModules(filters?: {
+  role?: string;
+  level?: number;
+  isPublished?: boolean;
+}) {
+  const db = await getDb();
+  let query = db.select().from(academyModules);
+
+  if (filters?.role) {
+    query = query.where(eq(academyModules.role, filters.role as any));
+  }
+  if (filters?.level) {
+    query = query.where(eq(academyModules.level, filters.level));
+  }
+  if (filters?.isPublished !== undefined) {
+    query = query.where(eq(academyModules.isPublished, filters.isPublished));
+  }
+
+  return await query.orderBy(academyModules.sortOrder);
+}
+
+export async function getAcademyModule(moduleId: string) {
+  const db = await getDb();
+  const result = await db.select().from(academyModules).where(eq(academyModules.moduleId, moduleId));
+  return result[0] || null;
+}
+
+export async function createAcademyModule(data: InsertAcademyModule) {
+  const db = await getDb();
+  const result = await db.insert(academyModules).values(data);
+  return result;
+}
+
+export async function updateAcademyModule(moduleId: string, data: Partial<InsertAcademyModule>) {
+  const db = await getDb();
+  const result = await db
+    .update(academyModules)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(academyModules.moduleId, moduleId));
+  return result;
+}
+
+// ============================================================================
+// AI Prompts
+// ============================================================================
+
+export async function getAIPrompts(filters?: {
+  category?: string;
+  targetRoles?: string[];
+  targetMaturityLevel?: number;
+  isActive?: boolean;
+}) {
+  const db = await getDb();
+  let query = db.select().from(aiPrompts);
+
+  if (filters?.category) {
+    query = query.where(eq(aiPrompts.category, filters.category as any));
+  }
+  if (filters?.targetMaturityLevel) {
+    query = query.where(eq(aiPrompts.targetMaturityLevel, filters.targetMaturityLevel));
+  }
+  if (filters?.isActive !== undefined) {
+    query = query.where(eq(aiPrompts.isActive, filters.isActive));
+  }
+
+  const results = await query.orderBy(aiPrompts.title);
+  
+  // Filter by target roles if specified
+  if (filters?.targetRoles && filters.targetRoles.length > 0) {
+    return results.filter((prompt: any) => 
+      prompt.targetRoles.some((role: string) => filters.targetRoles!.includes(role))
+    );
+  }
+
+  return results;
+}
+
+export async function getAIPrompt(promptId: string) {
+  const db = await getDb();
+  const result = await db.select().from(aiPrompts).where(eq(aiPrompts.promptId, promptId));
+  return result[0] || null;
+}
+
+export async function createAIPrompt(data: InsertAIPrompt) {
+  const db = await getDb();
+  const result = await db.insert(aiPrompts).values(data);
+  return result;
+}
+
+export async function updateAIPrompt(promptId: string, data: Partial<InsertAIPrompt>) {
+  const db = await getDb();
+  const result = await db
+    .update(aiPrompts)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(aiPrompts.promptId, promptId));
+  return result;
+}
+
+// ============================================================================
+// Simulations
+// ============================================================================
+
+export async function getSimulations(filters?: {
+  targetRoles?: string[];
+  targetLevel?: number;
+  pillar?: number;
+  isPublished?: boolean;
+}) {
+  const db = await getDb();
+  let query = db.select().from(simulations);
+
+  if (filters?.targetLevel) {
+    query = query.where(eq(simulations.targetLevel, filters.targetLevel));
+  }
+  if (filters?.pillar) {
+    query = query.where(eq(simulations.pillar, filters.pillar));
+  }
+  if (filters?.isPublished !== undefined) {
+    query = query.where(eq(simulations.isPublished, filters.isPublished));
+  }
+
+  const results = await query.orderBy(simulations.title);
+  
+  // Filter by target roles if specified
+  if (filters?.targetRoles && filters.targetRoles.length > 0) {
+    return results.filter((simulation: any) => 
+      simulation.targetRoles.some((role: string) => filters.targetRoles!.includes(role))
+    );
+  }
+
+  return results;
+}
+
+export async function getSimulation(simulationId: string) {
+  const db = await getDb();
+  const result = await db.select().from(simulations).where(eq(simulations.simulationId, simulationId));
+  return result[0] || null;
+}
+
+export async function createSimulation(data: InsertSimulation) {
+  const db = await getDb();
+  const result = await db.insert(simulations).values(data);
+  return result;
+}
+
+export async function updateSimulation(simulationId: string, data: Partial<InsertSimulation>) {
+  const db = await getDb();
+  const result = await db
+    .update(simulations)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(simulations.simulationId, simulationId));
+  return result;
 }
