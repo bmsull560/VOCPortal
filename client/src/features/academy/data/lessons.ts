@@ -107,6 +107,12 @@ export const ACADEMY_LESSONS: Record<string, AcademyLesson> = {
         description: "Watch a real discovery call using the VOS framework.",
       },
       {
+        id: "ai-coach-practice",
+        type: "ai-coach",
+        title: "AI Coach: Practice Discovery Questions",
+        description: "Get real-time AI feedback on your discovery questions and learn to ask better questions that uncover value.",
+      },
+      {
         id: "discovery-simulation",
         type: "simulation",
         title: "Practice: Discovery Roleplay",
@@ -141,6 +147,12 @@ export const ACADEMY_LESSONS: Record<string, AcademyLesson> = {
         title: "Value Hypothesis Template",
         description: "Framework for documenting pain-to-value mappings.",
         url: "/assets/demo/value-hypothesis-template.pdf",
+      },
+      {
+        id: "ai-coach-value-hypothesis",
+        type: "ai-coach",
+        title: "AI Coach: Build Your Value Hypothesis",
+        description: "Practice translating customer pain into quantified value hypotheses with AI guidance.",
       },
       {
         id: "pain-quiz",
@@ -202,6 +214,12 @@ export const ACADEMY_LESSONS: Record<string, AcademyLesson> = {
 - What if adoption is only 50%?
 - What if time-to-value is 6 months instead of 3?
 - Which variables have the highest impact?`,
+      },
+      {
+        id: "ai-coach-roi-modeling",
+        type: "ai-coach",
+        title: "AI Coach: Advanced ROI Modeling",
+        description: "Get expert feedback on your ROI models and learn to build executive-ready business cases.",
       },
     ],
   },

@@ -198,11 +198,9 @@ export default function Home() {
             </p>
             {isAuthenticated ? (
               <Link href="/dashboard">
-                <a>
-                  <Button size="lg" variant="secondary" className="gap-2">
-                    Go to Dashboard <ArrowRight className="h-5 w-5" />
-                  </Button>
-                </a>
+                <Button size="lg" variant="secondary" className="gap-2">
+                  Go to Dashboard <ArrowRight className="h-5 w-5" />
+                </Button>
               </Link>
             ) : (
               <Link href="/dashboard">
