@@ -26,6 +26,7 @@ import {
 import { Link, useLocation } from "wouter";
 import { LessonPlayer } from "../../features/academy/engine/LessonPlayer";
 import { MatrixRoadmap } from "../../features/academy/components/MatrixRoadmap";
+import { AIRecommendations } from "../../features/academy/components/AIRecommendations";
 
 interface RoleTrack {
   id: string;
@@ -270,6 +271,17 @@ export default function AcademyDashboard() {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* AI-Powered Recommendations */}
+          {user?.vosRole && (
+            <div className="mb-8">
+              <AIRecommendations
+                userRole={user.vosRole}
+                maturityLevel={user.maturityLevel || 1}
+                completedLessons={[]}
+              />
+            </div>
           )}
 
           {/* Role Tracks */}
