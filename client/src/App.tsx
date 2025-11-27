@@ -11,6 +11,7 @@ import PillarOverview from "./pages/PillarOverview";
 import Quiz from "./pages/Quiz";
 import Profile from "./pages/Profile";
 import Resources from "./pages/Resources";
+import BeforeAfterPreview from "./components/BeforeAfterPreview";
 // Academy imports
 import AcademyDashboard from "./pages/academy/Dashboard";
 import AcademyMaturityAssessment from "./pages/academy/MaturityAssessment";
@@ -31,6 +32,7 @@ function Router() {
       <Route path={"/quiz/:pillarNumber"} component={Quiz} />
       <Route path={"/profile"} component={Profile} />
       <Route path={"/resources"} component={Resources} />
+      <Route path={"/preview"} component={BeforeAfterPreview} />
       {/* Academy Routes - Redirect to unified dashboard tabs */}
       <Route path={"/academy"} component={DashboardWithOnboarding} />
       <Route path={"/academy/dashboard"} component={DashboardWithOnboarding} />
