@@ -29,6 +29,20 @@ import {
   InsertAcademyModule,
   InsertAIPrompt,
   InsertSimulation,
+  learningPaths,
+  userLearningProgress,
+  userOnboarding,
+  roleLearningTracks,
+  userRoleHistory,
+  achievements,
+  userAchievements,
+  InsertLearningPath,
+  InsertUserLearningProgress,
+  InsertUserOnboarding,
+  InsertRoleLearningTrack,
+  InsertUserRoleHistory,
+  InsertAchievement,
+  InsertUserAchievement,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -373,8 +387,24 @@ export async function createMaturityAssessment(assessment: InsertMaturityAssessm
 // Resources
 // ============================================================================
 
-export async function getAllResources(vosRole: string) {
+export async function getAllResources() {
   const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(resources);
+}
+
+export async function getResourcesByPillar(pillarId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(resources).where(eq(resources.pillarId, pillarId));
+}
+
+export async function getResourcesByRole(vosRole: string) {
+  const db = await getDb();
+  if (!db) return [];
+
   return await db.select().from(resources).where(eq(resources.vosRole, vosRole));
 }
 
@@ -620,4 +650,205 @@ export async function updateSimulation(simulationId: string, data: Partial<Inser
     .set({ ...data, updatedAt: new Date() })
     .where(eq(simulations.simulationId, simulationId));
   return result;
+}
+
+// ============================================================================
+// Onboarding
+// ============================================================================
+
+export async function getUserOnboarding(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select().from(userOnboarding).where(eq(userOnboarding.userId, userId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function createUserOnboarding(data: InsertUserOnboarding) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.insert(userOnboarding).values(data);
+}
+
+export async function updateUserOnboardingStatus(userId: number, completed: boolean, step: number) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(users)
+    .set({ onboardingCompleted: completed, onboardingStep: step })
+    .where(eq(users.id, userId));
+}
+
+// ============================================================================
+// Learning Paths
+// ============================================================================
+
+export async function getLearningPaths(type?: string, role?: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let query = db.select().from(learningPaths).where(eq(learningPaths.isActive, true));
+
+  if (type) {
+    query = query.where(eq(learningPaths.type, type as any));
+  }
+  if (role) {
+    query = query.where(eq(learningPaths.targetRole, role as any));
+  }
+
+  return await query;
+}
+
+export async function getLearningPath(pathId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select().from(learningPaths).where(eq(learningPaths.pathId, pathId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function createLearningPath(data: InsertLearningPath) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.insert(learningPaths).values(data);
+}
+
+// ============================================================================
+// User Learning Progress
+// ============================================================================
+
+export async function getUserLearningProgress(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select().from(userLearningProgress).where(eq(userLearningProgress.userId, userId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function createUserLearningProgress(data: InsertUserLearningProgress) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.insert(userLearningProgress).values(data);
+}
+
+export async function updateUserLearningProgress(userId: number, data: Partial<InsertUserLearningProgress>) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(userLearningProgress)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(userLearningProgress.userId, userId));
+}
+
+// ============================================================================
+// Role Learning Tracks
+// ============================================================================
+
+export async function getRoleLearningTrack(role: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select()
+    .from(roleLearningTracks)
+    .where(eq(roleLearningTracks.role, role as any))
+    .orderBy(roleLearningTracks.priorityOrder);
+}
+
+export async function createRoleLearningTrack(data: InsertRoleLearningTrack) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.insert(roleLearningTracks).values(data);
+}
+
+// ============================================================================
+// Role History
+// ============================================================================
+
+export async function createRoleHistoryEntry(userId: number, role: string) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.insert(userRoleHistory).values({
+    userId,
+    role: role as any,
+  });
+}
+
+export async function getUserRoleHistory(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select()
+    .from(userRoleHistory)
+    .where(eq(userRoleHistory.userId, userId))
+    .orderBy(desc(userRoleHistory.changedAt));
+}
+
+// ============================================================================
+// Achievements
+// ============================================================================
+
+export async function getAllAchievements() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(achievements).where(eq(achievements.isActive, true));
+}
+
+export async function getAchievement(achievementId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select().from(achievements).where(eq(achievements.achievementId, achievementId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function createAchievement(data: InsertAchievement) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.insert(achievements).values(data);
+}
+
+export async function getUserAchievements(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select()
+    .from(userAchievements)
+    .where(eq(userAchievements.userId, userId))
+    .orderBy(desc(userAchievements.earnedAt));
+}
+
+export async function awardAchievement(userId: number, achievementId: number) {
+  const db = await getDb();
+  if (!db) return;
+
+  const existing = await db.select()
+    .from(userAchievements)
+    .where(and(
+      eq(userAchievements.userId, userId),
+      eq(userAchievements.achievementId, achievementId)
+    ))
+    .limit(1);
+
+  if (existing.length === 0) {
+    await db.insert(userAchievements).values({
+      userId,
+      achievementId,
+    });
+  }
+}
+
+export async function markAchievementNotified(userAchievementId: number) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(userAchievements)
+    .set({ notified: true })
+    .where(eq(userAchievements.id, userAchievementId));
 }

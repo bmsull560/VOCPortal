@@ -21,15 +21,47 @@ export const appRouter = router({
 
   // User profile management
   user: router({
+    update: protectedProcedure
+      .input(z.object({
+        vosRole: z.enum(["Sales", "CS", "Marketing", "Product", "Executive", "VE"]).optional(),
+        learningPathPreference: z.enum(["guided", "self_paced", "role_specific"]).optional(),
+        maturityLevel: z.number().min(0).max(5).optional(),
+        onboardingCompleted: z.boolean().optional(),
+        onboardingStep: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+
+        const updateData: any = {};
+        if (input.vosRole !== undefined) updateData.vosRole = input.vosRole;
+        if (input.learningPathPreference !== undefined) updateData.learningPathPreference = input.learningPathPreference;
+        if (input.maturityLevel !== undefined) updateData.maturityLevel = input.maturityLevel;
+        if (input.onboardingCompleted !== undefined) updateData.onboardingCompleted = input.onboardingCompleted;
+        if (input.onboardingStep !== undefined) updateData.onboardingStep = input.onboardingStep;
+
+        const { users } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+
+        await db.update(users).set(updateData).where(eq(users.id, ctx.user.id));
+
+        if (input.vosRole) {
+          await import("./db").then(m => m.createRoleHistoryEntry(ctx.user.id, input.vosRole!));
+        }
+
+        return { success: true };
+      }),
+
     updateVosRole: protectedProcedure
       .input(z.object({
         vosRole: z.enum(["Sales", "CS", "Marketing", "Product", "Executive", "VE"])
       }))
       .mutation(async ({ ctx, input }) => {
         await db.updateUserVosRole(ctx.user.id, input.vosRole);
+        await db.createRoleHistoryEntry(ctx.user.id, input.vosRole);
         return { success: true };
       }),
-    
+
     updateMaturityLevel: protectedProcedure
       .input(z.object({
         level: z.number().min(0).max(5)

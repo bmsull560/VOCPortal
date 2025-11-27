@@ -28,9 +28,14 @@ export default function Home() {
                 </Link>
               </>
             ) : (
-              <Link href="/dashboard">
-                <Button>Demo Login</Button>
-              </Link>
+              <>
+                <Link href="/dashboard">
+                  <Button>Get Started</Button>
+                </Link>
+                <a href={getLoginUrl()}>
+                  <Button variant="ghost">Sign In</Button>
+                </a>
+              </>
             )}
           </nav>
         </div>
@@ -55,7 +60,7 @@ export default function Home() {
             ) : (
               <Link href="/dashboard">
                 <Button size="lg" variant="secondary" className="gap-2">
-                  Demo Login <ArrowRight className="h-5 w-5" />
+                  Get Started Free <ArrowRight className="h-5 w-5" />
                 </Button>
               </Link>
             )}
@@ -205,7 +210,7 @@ export default function Home() {
             ) : (
               <Link href="/dashboard">
                 <Button size="lg" variant="secondary" className="gap-2">
-                  Demo Login <ArrowRight className="h-5 w-5" />
+                  Get Started Free <ArrowRight className="h-5 w-5" />
                 </Button>
               </Link>
             )}

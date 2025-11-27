@@ -15,7 +15,12 @@ export const users = mysqlTable("users", {
   // VOS-specific fields
   vosRole: mysqlEnum("vosRole", ["Sales", "CS", "Marketing", "Product", "Executive", "VE"]),
   maturityLevel: int("maturityLevel").default(0).notNull(), // 0-5
-  
+
+  // Onboarding tracking
+  onboardingCompleted: boolean("onboardingCompleted").default(false).notNull(),
+  onboardingStep: int("onboardingStep").default(0).notNull(),
+  learningPathPreference: mysqlEnum("learningPathPreference", ["guided", "self_paced", "role_specific"]),
+
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -398,3 +403,149 @@ export const simulations = mysqlTable("simulations", {
 
 export type Simulation = typeof simulations.$inferSelect;
 export type InsertSimulation = typeof simulations.$inferInsert;
+
+/**
+ * Learning Paths - Predefined curriculum structures
+ */
+export const learningPaths = mysqlTable("learningPaths", {
+  id: int("id").autoincrement().primaryKey(),
+  pathId: varchar("pathId", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  type: mysqlEnum("type", ["guided", "role_specific", "self_paced"]).notNull(),
+  targetRole: mysqlEnum("targetRole", ["Sales", "CS", "Marketing", "Product", "Executive", "VE", "All"]),
+
+  pillarSequence: json("pillarSequence").$type<number[]>(),
+  estimatedDuration: varchar("estimatedDuration", { length: 50 }),
+
+  prerequisites: json("prerequisites").$type<string[]>(),
+  isActive: boolean("isActive").default(true).notNull(),
+
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LearningPath = typeof learningPaths.$inferSelect;
+export type InsertLearningPath = typeof learningPaths.$inferInsert;
+
+/**
+ * User Learning Progress - Tracks user's journey through learning paths
+ */
+export const userLearningProgress = mysqlTable("userLearningProgress", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  learningPathId: int("learningPathId"),
+
+  currentPillarNumber: int("currentPillarNumber").default(1).notNull(),
+  completedPillars: json("completedPillars").$type<number[]>().default([]),
+  nextRecommendedLessonId: varchar("nextRecommendedLessonId", { length: 64 }),
+
+  totalLessonsCompleted: int("totalLessonsCompleted").default(0).notNull(),
+  totalTimeSpentMinutes: int("totalTimeSpentMinutes").default(0).notNull(),
+
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserLearningProgress = typeof userLearningProgress.$inferSelect;
+export type InsertUserLearningProgress = typeof userLearningProgress.$inferInsert;
+
+/**
+ * User Onboarding Data - Stores onboarding responses
+ */
+export const userOnboarding = mysqlTable("userOnboarding", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+
+  role: mysqlEnum("role", ["Sales", "CS", "Marketing", "Product", "Executive", "VE"]).notNull(),
+  learningPathPreference: mysqlEnum("learningPathPreference", ["guided", "self_paced", "role_specific"]).notNull(),
+  selfAssessedMaturity: int("selfAssessedMaturity").default(0).notNull(),
+
+  primaryGoals: json("primaryGoals").$type<string[]>(),
+
+  completedAt: timestamp("completedAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type UserOnboarding = typeof userOnboarding.$inferSelect;
+export type InsertUserOnboarding = typeof userOnboarding.$inferInsert;
+
+/**
+ * Role Learning Tracks - Define role-specific pillar priorities
+ */
+export const roleLearningTracks = mysqlTable("roleLearningTracks", {
+  id: int("id").autoincrement().primaryKey(),
+  role: mysqlEnum("role", ["Sales", "CS", "Marketing", "Product", "Executive", "VE"]).notNull(),
+  pillarNumber: int("pillarNumber").notNull(),
+
+  priorityOrder: int("priorityOrder").notNull(),
+  recommendedDuration: varchar("recommendedDuration", { length: 50 }),
+  roleSpecificObjectives: json("roleSpecificObjectives").$type<string[]>(),
+
+  isRequired: boolean("isRequired").default(true).notNull(),
+
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type RoleLearningTrack = typeof roleLearningTracks.$inferSelect;
+export type InsertRoleLearningTrack = typeof roleLearningTracks.$inferInsert;
+
+/**
+ * User Role History - Track role changes for analytics
+ */
+export const userRoleHistory = mysqlTable("userRoleHistory", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  role: mysqlEnum("role", ["Sales", "CS", "Marketing", "Product", "Executive", "VE"]).notNull(),
+
+  changedAt: timestamp("changedAt").defaultNow().notNull(),
+});
+
+export type UserRoleHistory = typeof userRoleHistory.$inferSelect;
+export type InsertUserRoleHistory = typeof userRoleHistory.$inferInsert;
+
+/**
+ * Achievements - Badge and milestone system
+ */
+export const achievements = mysqlTable("achievements", {
+  id: int("id").autoincrement().primaryKey(),
+  achievementId: varchar("achievementId", { length: 64 }).notNull().unique(),
+
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  category: mysqlEnum("category", ["pillar_completion", "maturity_level", "streak", "quiz_mastery", "certification"]).notNull(),
+
+  iconUrl: text("iconUrl"),
+  requirement: json("requirement").$type<{
+    type: string;
+    value: number | string;
+    criteria?: any;
+  }>(),
+
+  points: int("points").default(0).notNull(),
+  rarity: mysqlEnum("rarity", ["common", "rare", "epic", "legendary"]).default("common").notNull(),
+
+  isActive: boolean("isActive").default(true).notNull(),
+
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Achievement = typeof achievements.$inferSelect;
+export type InsertAchievement = typeof achievements.$inferInsert;
+
+/**
+ * User Achievements - Track earned achievements
+ */
+export const userAchievements = mysqlTable("userAchievements", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  achievementId: int("achievementId").notNull(),
+
+  earnedAt: timestamp("earnedAt").defaultNow().notNull(),
+  notified: boolean("notified").default(false).notNull(),
+});
+
+export type UserAchievement = typeof userAchievements.$inferSelect;
+export type InsertUserAchievement = typeof userAchievements.$inferInsert;

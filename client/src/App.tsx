@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
+import DashboardWithOnboarding from "./pages/DashboardWithOnboarding";
 import PillarOverview from "./pages/PillarOverview";
 import Quiz from "./pages/Quiz";
 import Profile from "./pages/Profile";
@@ -24,14 +25,15 @@ function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Home} />
-      <Route path={"/dashboard"} component={Dashboard} />
+      <Route path={"/dashboard"} component={DashboardWithOnboarding} />
+      <Route path={"/dashboard-legacy"} component={Dashboard} />
       <Route path={"/pillar/:pillarNumber"} component={PillarOverview} />
       <Route path={"/quiz/:pillarNumber"} component={Quiz} />
       <Route path={"/profile"} component={Profile} />
       <Route path={"/resources"} component={Resources} />
-      {/* Academy Routes */}
-      <Route path={"/academy"} component={AcademyDashboard} />
-      <Route path={"/academy/dashboard"} component={AcademyDashboard} />
+      {/* Academy Routes - Redirect to unified dashboard tabs */}
+      <Route path={"/academy"} component={DashboardWithOnboarding} />
+      <Route path={"/academy/dashboard"} component={DashboardWithOnboarding} />
       <Route path={"/academy/lesson/:id"} component={LessonView} />
       <Route path={"/academy/maturity-assessment"} component={AcademyMaturityAssessment} />
       <Route path={"/academy/role/:role"} component={RoleTrack} />
