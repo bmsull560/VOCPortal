@@ -32,7 +32,11 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         try {
           const db = await import("./db").then(m => m.getDb());
-          if (!db) throw new Error("Database not available");
+          if (!db) {
+            const envCheck = process.env.DATABASE_URL;
+            console.error("[User Update] Database not available. DATABASE_URL:", envCheck ? "SET" : "NOT SET");
+            throw new Error("Database connection not configured. Please set DATABASE_URL environment variable with a MySQL connection string (e.g., mysql://user:password@host:port/database)");
+          }
 
           const updateData: any = {};
           if (input.vosRole !== undefined) updateData.vosRole = input.vosRole;
