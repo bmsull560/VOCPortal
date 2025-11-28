@@ -24,7 +24,9 @@ export default function DashboardWithOnboarding() {
 
   const handleOnboardingComplete = async (data: any) => {
     try {
-      await updateUserMutation.mutateAsync({
+      console.log("Completing onboarding with data:", data);
+
+      const result = await updateUserMutation.mutateAsync({
         vosRole: data.role,
         learningPathPreference: data.learningPathPreference,
         maturityLevel: data.selfAssessedMaturity,
@@ -32,10 +34,12 @@ export default function DashboardWithOnboarding() {
         onboardingStep: 4
       });
 
+      console.log("Onboarding update result:", result);
       setShowOnboarding(false);
       window.location.reload();
     } catch (error) {
       console.error("Failed to complete onboarding:", error);
+      alert("Failed to save your onboarding preferences. Please try again.");
     }
   };
 

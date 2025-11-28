@@ -152,6 +152,7 @@ const GOALS = [
 
 export default function OnboardingWizard({ onComplete, initialData }: OnboardingWizardProps) {
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [data, setData] = useState<Partial<OnboardingData>>({
     role: initialData?.role || "",
     learningPathPreference: initialData?.learningPathPreference || "",
@@ -162,11 +163,17 @@ export default function OnboardingWizard({ onComplete, initialData }: Onboarding
   const totalSteps = 4;
   const progress = (step / totalSteps) * 100;
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < totalSteps) {
       setStep(step + 1);
     } else {
-      onComplete(data as OnboardingData);
+      setIsSubmitting(true);
+      try {
+        await onComplete(data as OnboardingData);
+      } catch (error) {
+        console.error("Onboarding completion error:", error);
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -444,10 +451,10 @@ export default function OnboardingWizard({ onComplete, initialData }: Onboarding
 
             <Button
               onClick={handleNext}
-              disabled={!isStepValid()}
+              disabled={!isStepValid() || isSubmitting}
             >
               {step === totalSteps ? (
-                <>Start Learning</>
+                <>{isSubmitting ? "Saving..." : "Start Learning"}</>
               ) : (
                 <>
                   Next
