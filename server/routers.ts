@@ -30,26 +30,38 @@ export const appRouter = router({
         onboardingStep: z.number().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const db = await import("./db").then(m => m.getDb());
-        if (!db) throw new Error("Database not available");
+        try {
+          const db = await import("./db").then(m => m.getDb());
+          if (!db) throw new Error("Database not available");
 
-        const updateData: any = {};
-        if (input.vosRole !== undefined) updateData.vosRole = input.vosRole;
-        if (input.learningPathPreference !== undefined) updateData.learningPathPreference = input.learningPathPreference;
-        if (input.maturityLevel !== undefined) updateData.maturityLevel = input.maturityLevel;
-        if (input.onboardingCompleted !== undefined) updateData.onboardingCompleted = input.onboardingCompleted;
-        if (input.onboardingStep !== undefined) updateData.onboardingStep = input.onboardingStep;
+          const updateData: any = {};
+          if (input.vosRole !== undefined) updateData.vosRole = input.vosRole;
+          if (input.learningPathPreference !== undefined) updateData.learningPathPreference = input.learningPathPreference;
+          if (input.maturityLevel !== undefined) updateData.maturityLevel = input.maturityLevel;
+          if (input.onboardingCompleted !== undefined) updateData.onboardingCompleted = input.onboardingCompleted;
+          if (input.onboardingStep !== undefined) updateData.onboardingStep = input.onboardingStep;
 
-        const { users } = await import("../drizzle/schema");
-        const { eq } = await import("drizzle-orm");
+          console.log("Updating user with data:", updateData, "for user:", ctx.user.id);
 
-        await db.update(users).set(updateData).where(eq(users.id, ctx.user.id));
+          const { users } = await import("../drizzle/schema");
+          const { eq } = await import("drizzle-orm");
 
-        if (input.vosRole) {
-          await import("./db").then(m => m.createRoleHistoryEntry(ctx.user.id, input.vosRole!));
+          await db.update(users).set(updateData).where(eq(users.id, ctx.user.id));
+
+          if (input.vosRole) {
+            try {
+              await import("./db").then(m => m.createRoleHistoryEntry(ctx.user.id, input.vosRole!));
+            } catch (roleHistoryError) {
+              console.error("Failed to create role history entry:", roleHistoryError);
+            }
+          }
+
+          console.log("User update completed successfully");
+          return { success: true };
+        } catch (error) {
+          console.error("User update failed:", error);
+          throw new Error(`Failed to update user: ${error instanceof Error ? error.message : String(error)}`);
         }
-
-        return { success: true };
       }),
 
     updateVosRole: protectedProcedure
