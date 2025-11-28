@@ -1,22 +1,13 @@
 import { pgTable, serial, varchar, text, timestamp, integer, boolean, json, pgEnum } from "drizzle-orm/pg-core";
 
-// Enum definitions
-export const roleEnum = pgEnum("role", ["user", "admin"]);
-export const vosRoleEnum = pgEnum("vos_role", ["Sales", "CS", "Marketing", "Product", "Executive", "VE"]);
-export const learningPathPreferenceEnum = pgEnum("learning_path_preference", ["guided", "self_paced", "role_specific"]);
-export const statusEnum = pgEnum("status", ["not_started", "in_progress", "completed"]);
-export const questionTypeEnum = pgEnum("question_type", ["multiple_choice", "scenario_based"]);
-export const resourceTypeEnum = pgEnum("resource_type", ["kpi_sheet", "template", "framework", "guide", "playbook"]);
-export const simulationTypeEnum = pgEnum("simulation_type", ["handoff", "decision_tree", "drag_drop", "role_play", "case_study"]);
-export const learningPathTypeEnum = pgEnum("learning_path_type", ["guided", "role_specific", "self_paced"]);
-export const achievementCategoryEnum = pgEnum("achievement_category", ["pillar_completion", "maturity_level", "streak", "quiz_mastery", "certification"]);
-export const rarityEnum = pgEnum("rarity", ["common", "rare", "epic", "legendary"]);
-export const promptCategoryEnum = pgEnum("prompt_category", ["discovery", "roi_modeling", "realization", "expansion", "governance"]);
-
 /**
  * Core user table backing auth flow.
  * Extended with VOS-specific fields for role and maturity tracking.
  */
+export const roleEnum = pgEnum("role", ["user", "admin"]);
+export const vosRoleEnum = pgEnum("vos_role", ["Sales", "CS", "Marketing", "Product", "Executive", "VE"]);
+export const learningPathPreferenceEnum = pgEnum("learning_path_preference", ["guided", "self_paced", "role_specific"]);
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
@@ -46,7 +37,7 @@ export type InsertUser = typeof users.$inferInsert;
  * VOS Pillars - 10 core training modules
  */
 export const pillars = pgTable("pillars", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey(),
   pillarNumber: integer("pillarNumber").notNull().unique(), // 1-10
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description").notNull(),
@@ -69,10 +60,10 @@ export type InsertPillar = typeof pillars.$inferInsert;
  * User progress through pillars
  */
 export const progress = pgTable("progress", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey(),
   userId: integer("userId").notNull(),
   pillarId: integer("pillarId").notNull(),
-  status: statusEnum("status").default("not_started").notNull(),
+  status: mysqlEnum("status", ["not_started", "in_progress", "completed"]).default("not_started").notNull(),
   completionPercentage: integer("completionPercentage").default(0).notNull(), // 0-100
   lastAccessed: timestamp("lastAccessed").defaultNow().notNull(),
   completedAt: timestamp("completedAt"),
@@ -87,16 +78,16 @@ export type InsertProgress = typeof progress.$inferInsert;
  * Quiz questions for each pillar
  */
 export const quizQuestions = pgTable("quizQuestions", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey(),
   pillarId: integer("pillarId").notNull(),
   questionNumber: integer("questionNumber").notNull(),
-  questionType: questionTypeEnum("questionType").notNull(),
+  questionType: mysqlEnum("questionType", ["multiple_choice", "scenario_based"]).notNull(),
   category: varchar("category", { length: 100 }).notNull(), // e.g., "Value Definitions", "KPI Taxonomy"
   questionText: text("questionText").notNull(),
   options: json("options").$type<Array<{ id: string; text: string }>>(),
   correctAnswer: varchar("correctAnswer", { length: 10 }).notNull(),
   points: integer("points").default(4).notNull(),
-
+  
   // Maturity-based feedback
   feedback: json("feedback").$type<{
     correct: string;
@@ -107,7 +98,7 @@ export const quizQuestions = pgTable("quizQuestions", {
       level3plus: string;
     };
   }>(),
-
+  
   // Role-specific adaptations
   roleAdaptations: json("roleAdaptations").$type<{
     Sales?: string;
@@ -117,7 +108,7 @@ export const quizQuestions = pgTable("quizQuestions", {
     Executive?: string;
     VE?: string;
   }>(),
-
+  
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
@@ -129,11 +120,11 @@ export type InsertQuizQuestion = typeof quizQuestions.$inferInsert;
  * Quiz results and submissions
  */
 export const quizResults = pgTable("quizResults", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey(),
   userId: integer("userId").notNull(),
   pillarId: integer("pillarId").notNull(),
   score: integer("score").notNull(), // 0-100
-
+  
   // Category scores
   categoryScores: json("categoryScores").$type<{
     valueDefinitions?: number;
@@ -141,7 +132,7 @@ export const quizResults = pgTable("quizResults", {
     roiFrameworks?: number;
     overallApplication?: number;
   }>(),
-
+  
   // User answers
   answers: json("answers").$type<Array<{
     questionId: number;
@@ -149,7 +140,7 @@ export const quizResults = pgTable("quizResults", {
     isCorrect: boolean;
     pointsEarned: number;
   }>>(),
-
+  
   // Feedback received
   feedback: json("feedback").$type<{
     overall: string;
@@ -157,7 +148,7 @@ export const quizResults = pgTable("quizResults", {
     improvements: string[];
     nextSteps: string[];
   }>(),
-
+  
   passed: boolean("passed").default(false).notNull(), // 80%+ threshold
   attemptNumber: integer("attemptNumber").default(1).notNull(),
   completedAt: timestamp("completedAt").defaultNow().notNull(),
@@ -171,7 +162,7 @@ export type InsertQuizResult = typeof quizResults.$inferInsert;
  * Certifications awarded to users
  */
 export const certifications = pgTable("certifications", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey(),
   userId: integer("userId").notNull(),
   badgeName: varchar("badgeName", { length: 255 }).notNull(),
   pillarId: integer("pillarId").notNull(),
@@ -188,10 +179,10 @@ export type InsertCertification = typeof certifications.$inferInsert;
  * Maturity assessments over time
  */
 export const maturityAssessments = pgTable("maturityAssessments", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey(),
   userId: integer("userId").notNull(),
   level: integer("level").notNull(), // 0-5
-
+  
   // Assessment data
   assessmentData: json("assessmentData").$type<{
     selfAssessment: number;
@@ -200,7 +191,7 @@ export const maturityAssessments = pgTable("maturityAssessments", {
     behaviorIndicators: string[];
     recommendations: string[];
   }>(),
-
+  
   assessedAt: timestamp("assessedAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -212,10 +203,10 @@ export type InsertMaturityAssessment = typeof maturityAssessments.$inferInsert;
  * Resources library (KPI sheets, templates, frameworks)
  */
 export const resources = pgTable("resources", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey(),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
-  resourceType: resourceTypeEnum("resourceType").notNull(),
+  resourceType: mysqlEnum("resourceType", ["kpi_sheet", "template", "framework", "guide", "playbook"]).notNull(),
   fileUrl: text("fileUrl").notNull(),
   pillarId: integer("pillarId"), // null means available for all pillars
   vosRole: varchar("vosRole", { length: 50 }), // null means available for all roles
@@ -230,13 +221,13 @@ export type InsertResource = typeof resources.$inferInsert;
  * Academy Progress - Detailed tracking for VOS Academy learning
  */
 export const academyProgress = pgTable("academyProgress", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey(),
   userId: integer("userId").notNull(),
-
+  
   // Role and level tracking
-  role: vosRoleEnum("role").notNull(),
+  role: mysqlEnum("role", ["Sales", "CS", "Marketing", "Product", "Executive", "VE"]).notNull(),
   currentLevel: integer("currentLevel").default(0).notNull(), // 0-5
-
+  
   // Module progress
   modulesCompleted: json("modulesCompleted").$type<{
     [moduleId: string]: {
@@ -246,7 +237,7 @@ export const academyProgress = pgTable("academyProgress", {
       timeSpent?: number;
     };
   }>(),
-
+  
   // Quiz performance
   quizzes: json("quizzes").$type<{
     [quizId: string]: {
@@ -256,7 +247,7 @@ export const academyProgress = pgTable("academyProgress", {
       passed: boolean;
     };
   }>(),
-
+  
   // Badge collection
   badges: json("badges").$type<{
     [badgeId: string]: {
@@ -265,15 +256,15 @@ export const academyProgress = pgTable("academyProgress", {
       category: string;
     };
   }>(),
-
+  
   // Overall maturity score (calculated)
   maturityScore: integer("maturityScore").default(0).notNull(), // 0-100
-
+  
   // Learning analytics
   totalTimeSpent: integer("totalTimeSpent").default(0).notNull(), // minutes
   streakDays: integer("streakDays").default(0).notNull(),
   lastActivityDate: timestamp("lastActivityDate").defaultNow().notNull(),
-
+  
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
@@ -285,15 +276,15 @@ export type InsertAcademyProgress = typeof academyProgress.$inferInsert;
  * Academy Modules - Individual learning modules within role tracks
  */
 export const academyModules = pgTable("academyModules", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey(),
   moduleId: varchar("moduleId", { length: 64 }).notNull().unique(),
-
+  
   // Module metadata
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description").notNull(),
-  role: vosRoleEnum("role").notNull(),
+  role: mysqlEnum("role", ["Sales", "CS", "Marketing", "Product", "Executive", "VE", "All"]).notNull(),
   level: integer("level").notNull(), // 0-5
-
+  
   // Content structure (JSON-driven)
   content: json("content").$type<{
     type: 'page';
@@ -302,24 +293,24 @@ export const academyModules = pgTable("academyModules", {
       props: Record<string, any>;
     }>;
   }>(),
-
+  
   // Learning outcomes
   learningObjectives: json("learningObjectives").$type<string[]>(),
   requiredCompetencies: json("requiredCompetencies").$type<string[]>(),
-
+  
   // Assessment
   quizId: varchar("quizId", { length: 64 }),
   simulationId: varchar("simulationId", { length: 64 }),
   passingScore: integer("passingScore").default(80).notNull(),
-
+  
   // Prerequisites
   prerequisites: json("prerequisites").$type<string[]>(),
   estimatedDuration: integer("estimatedDuration").notNull(), // minutes
-
+  
   // Status
   isPublished: boolean("isPublished").default(false).notNull(),
   sortOrder: integer("sortOrder").default(0).notNull(),
-
+  
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
@@ -331,18 +322,20 @@ export type InsertAcademyModule = typeof academyModules.$inferInsert;
  * AI Prompts Library - Curated prompts for VOS workflows
  */
 export const aiPrompts = pgTable("aiPrompts", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey(),
   promptId: varchar("promptId", { length: 64 }).notNull().unique(),
-
+  
   // Categorization
-  category: promptCategoryEnum("category").notNull(),
+  category: mysqlEnum("category", [
+    "discovery", "roi_modeling", "realization", "expansion", "governance"
+  ]).notNull(),
   subcategory: varchar("subcategory", { length: 100 }),
-
+  
   // Prompt content
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description").notNull(),
   promptText: text("promptText").notNull(),
-
+  
   // Usage guidelines
   usageGuidelines: json("usageGuidelines").$type<{
     inputs: string[];
@@ -353,16 +346,16 @@ export const aiPrompts = pgTable("aiPrompts", {
       output: string;
     }>;
   }>(),
-
+  
   // Role and level targeting
   targetRoles: json("targetRoles").$type<string[]>(),
   targetMaturityLevel: integer("targetMaturityLevel").notNull(), // 0-5
-
+  
   // Metadata
   tags: json("tags").$type<string[]>(),
   version: varchar("version", { length: 20 }).default("1.0").notNull(),
   isActive: boolean("isActive").default(true).notNull(),
-
+  
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
@@ -374,19 +367,21 @@ export type InsertAIPrompt = typeof aiPrompts.$inferInsert;
  * Simulation Workflows - Interactive learning simulations
  */
 export const simulations = pgTable("simulations", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey(),
   simulationId: varchar("simulationId", { length: 64 }).notNull().unique(),
-
+  
   // Simulation metadata
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description").notNull(),
-  type: simulationTypeEnum("type").notNull(),
-
+  type: mysqlEnum("type", [
+    "handoff", "decision_tree", "drag_drop", "role_play", "case_study"
+  ]).notNull(),
+  
   // Targeting
   targetRoles: json("targetRoles").$type<string[]>(),
   targetLevel: integer("targetLevel").notNull(), // 0-5
   pillar: integer("pillar").notNull(), // 1-10
-
+  
   // Simulation flow
   flow: json("flow").$type<{
     steps: Array<{
@@ -397,15 +392,15 @@ export const simulations = pgTable("simulations", {
       scoring: any;
     }>;
   }>(),
-
+  
   // Scoring logic
   maxScore: integer("maxScore").default(100).notNull(),
   passingScore: integer("passingScore").default(80).notNull(),
   timeLimit: integer("timeLimit"), // minutes, null for no limit
-
+  
   // Status
   isPublished: boolean("isPublished").default(false).notNull(),
-
+  
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
@@ -417,12 +412,12 @@ export type InsertSimulation = typeof simulations.$inferInsert;
  * Learning Paths - Predefined curriculum structures
  */
 export const learningPaths = pgTable("learningPaths", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey(),
   pathId: varchar("pathId", { length: 64 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description").notNull(),
-  type: learningPathTypeEnum("type").notNull(),
-  targetRole: vosRoleEnum("targetRole"),
+  type: mysqlEnum("type", ["guided", "role_specific", "self_paced"]).notNull(),
+  targetRole: mysqlEnum("targetRole", ["Sales", "CS", "Marketing", "Product", "Executive", "VE", "All"]),
 
   pillarSequence: json("pillarSequence").$type<number[]>(),
   estimatedDuration: varchar("estimatedDuration", { length: 50 }),
@@ -441,7 +436,7 @@ export type InsertLearningPath = typeof learningPaths.$inferInsert;
  * User Learning Progress - Tracks user's journey through learning paths
  */
 export const userLearningProgress = pgTable("userLearningProgress", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey(),
   userId: integer("userId").notNull(),
   learningPathId: integer("learningPathId"),
 
@@ -463,11 +458,11 @@ export type InsertUserLearningProgress = typeof userLearningProgress.$inferInser
  * User Onboarding Data - Stores onboarding responses
  */
 export const userOnboarding = pgTable("userOnboarding", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey(),
   userId: integer("userId").notNull().unique(),
 
-  role: vosRoleEnum("role").notNull(),
-  learningPathPreference: learningPathPreferenceEnum("learningPathPreference").notNull(),
+  role: mysqlEnum("role", ["Sales", "CS", "Marketing", "Product", "Executive", "VE"]).notNull(),
+  learningPathPreference: mysqlEnum("learningPathPreference", ["guided", "self_paced", "role_specific"]).notNull(),
   selfAssessedMaturity: integer("selfAssessedMaturity").default(0).notNull(),
 
   primaryGoals: json("primaryGoals").$type<string[]>(),
@@ -483,8 +478,8 @@ export type InsertUserOnboarding = typeof userOnboarding.$inferInsert;
  * Role Learning Tracks - Define role-specific pillar priorities
  */
 export const roleLearningTracks = pgTable("roleLearningTracks", {
-  id: serial("id").primaryKey(),
-  role: vosRoleEnum("role").notNull(),
+  id: integer("id").primaryKey(),
+  role: mysqlEnum("role", ["Sales", "CS", "Marketing", "Product", "Executive", "VE"]).notNull(),
   pillarNumber: integer("pillarNumber").notNull(),
 
   priorityOrder: integer("priorityOrder").notNull(),
@@ -504,9 +499,9 @@ export type InsertRoleLearningTrack = typeof roleLearningTracks.$inferInsert;
  * User Role History - Track role changes for analytics
  */
 export const userRoleHistory = pgTable("userRoleHistory", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey(),
   userId: integer("userId").notNull(),
-  role: vosRoleEnum("role").notNull(),
+  role: mysqlEnum("role", ["Sales", "CS", "Marketing", "Product", "Executive", "VE"]).notNull(),
 
   changedAt: timestamp("changedAt").defaultNow().notNull(),
 });
@@ -518,12 +513,12 @@ export type InsertUserRoleHistory = typeof userRoleHistory.$inferInsert;
  * Achievements - Badge and milestone system
  */
 export const achievements = pgTable("achievements", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey(),
   achievementId: varchar("achievementId", { length: 64 }).notNull().unique(),
 
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description").notNull(),
-  category: achievementCategoryEnum("category").notNull(),
+  category: mysqlEnum("category", ["pillar_completion", "maturity_level", "streak", "quiz_mastery", "certification"]).notNull(),
 
   iconUrl: text("iconUrl"),
   requirement: json("requirement").$type<{
@@ -533,7 +528,7 @@ export const achievements = pgTable("achievements", {
   }>(),
 
   points: integer("points").default(0).notNull(),
-  rarity: rarityEnum("rarity").default("common").notNull(),
+  rarity: mysqlEnum("rarity", ["common", "rare", "epic", "legendary"]).default("common").notNull(),
 
   isActive: boolean("isActive").default(true).notNull(),
 
@@ -548,7 +543,7 @@ export type InsertAchievement = typeof achievements.$inferInsert;
  * User Achievements - Track earned achievements
  */
 export const userAchievements = pgTable("userAchievements", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey(),
   userId: integer("userId").notNull(),
   achievementId: integer("achievementId").notNull(),
 
